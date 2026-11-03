@@ -1,0 +1,45 @@
+# install -> %pip install -q librosa matplotlib soundfile
+
+import numpy as np
+import soundfile as sf
+import librosa
+import librosa.display
+import matplotlib.pyplot as plt
+from IPython.display import Audio, display
+
+# Load audio
+audio, sr = sf.read("music.wav")
+
+print("Sample rate:", sr)
+print("Duration:", len(audio) / sr, "seconds")
+print("Valid audio:", np.isfinite(audio).all())
+
+# Play audio
+display(Audio(audio.T, rate=sr))
+
+# Convert stereo to mono
+if audio.ndim == 2:
+    mono = audio.mean(axis=1)
+else:
+    mono = audio
+
+# Plot waveform
+time = np.arange(len(mono)) / sr
+
+plt.figure(figsize=(10, 3))
+plt.plot(time, mono)
+plt.title("Audio Waveform")
+plt.xlabel("Time (seconds)")
+plt.ylabel("Amplitude")
+plt.grid()
+plt.show()
+
+# Generate spectrogram
+D = librosa.stft(mono)
+S = librosa.amplitude_to_db(np.abs(D), ref=np.max)
+
+plt.figure(figsize=(10, 4))
+librosa.display.specshow(S, sr=sr, x_axis="time", y_axis="log")
+plt.colorbar()
+plt.title("Audio Spectrogram")
+plt.show()

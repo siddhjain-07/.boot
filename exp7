@@ -1,0 +1,14 @@
+import torch
+import torch.nn as nn
+
+G = nn.Linear(2, 2)  # A to B
+F = nn.Linear(2, 2)  # B to A
+
+A = torch.randn(10, 2)
+
+fakeB = G(A)
+reconstructedA = F(fakeB)
+
+loss = nn.L1Loss()(reconstructedA, A)
+
+print("Cycle loss:", loss.item())

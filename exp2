@@ -1,0 +1,26 @@
+import torch
+import torch.nn as nn
+
+G = nn.Sequential(nn.Linear(5, 1))
+D = nn.Sequential(nn.Linear(1, 1), nn.Sigmoid())
+
+g = torch.optim.Adam(G.parameters())
+d = torch.optim.Adam(D.parameters())
+loss_fn = nn.BCELoss()
+
+for i in range(100):
+    real = torch.randn(16, 1)
+    fake = G(torch.randn(16, 5)).detach()
+
+    lossD = loss_fn(D(real), torch.ones(16, 1)) + loss_fn(D(fake), torch.zeros(16, 1))
+    d.zero_grad()
+    lossD.backward()
+    d.step()
+
+    fake = G(torch.randn(16, 5))
+    lossG = loss_fn(D(fake), torch.ones(16, 1))
+    g.zero_grad()
+    lossG.backward()
+    g.step()
+
+print("GAN trained")

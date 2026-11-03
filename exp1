@@ -1,0 +1,19 @@
+import torch
+import torch.nn as nn
+
+x = torch.rand(100, 10)
+model = nn.Sequential(
+    nn.Linear(10, 3), nn.ReLU(),
+    nn.Linear(3, 10), nn.Sigmoid()
+)
+
+opt = torch.optim.Adam(model.parameters())
+
+for i in range(100):
+    out = model(x)
+    loss = ((out - x)**2).mean()
+    opt.zero_grad()
+    loss.backward()
+    opt.step()
+
+print("Loss:", loss.item())

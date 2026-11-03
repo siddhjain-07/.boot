@@ -1,0 +1,86 @@
+# run this -> !pip install -q transformers datasets accelerate torch
+
+import torch
+import numpy as np
+from datasets import Dataset
+from transformers import (
+    AutoTokenizer, AutoModelForCausalLM,
+    Trainer, TrainingArguments,
+    DataCollatorForLanguageModeling
+)
+
+# 1. Training data
+texts = [
+    "Artificial intelligence enables machines to perform tasks.",
+    "Machine learning learns patterns from data.",
+    "Deep learning uses neural networks.",
+    "Generative AI creates text, images and music.",
+    "Transformers use attention mechanisms to understand language.",
+    "GPT generates text by predicting the next token.",
+    "Fine tuning adapts pretrained models to specific tasks."
+]
+
+dataset = Dataset.from_dict({"text": texts})
+
+# 2. Load DistilGPT-2
+tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
+model = AutoModelForCausalLM.from_pretrained("distilgpt2")
+tokenizer.pad_token = tokenizer.eos_token
+
+# 3. Tokenization
+dataset = dataset.map(
+    lambda x: tokenizer(x["text"], truncation=True, max_length=128),
+    batched=True,
+    remove_columns=["text"]
+)
+
+# 4. Training configuration
+args = TrainingArguments(
+    output_dir="./gpt2",
+    num_train_epochs=5,
+    per_device_train_batch_size=2,
+    learning_rate=5e-5,
+    report_to="none",
+    save_strategy="no"
+)
+
+trainer = Trainer(
+    model=model,
+    args=args,
+    train_dataset=dataset,
+    data_collator=DataCollatorForLanguageModeling(
+        tokenizer=tokenizer, mlm=False
+    )
+)
+
+# 5. Fine-tune model
+trainer.train()
+
+# 6. Evaluate
+loss = trainer.evaluate()["eval_loss"] if False else trainer.evaluate(
+    eval_dataset=dataset
+)["eval_loss"]
+
+print("Loss:", round(loss, 4))
+print("Perplexity:", round(np.exp(loss), 4))
+
+# 7. Generate text
+def generate(prompt, temperature=0.8):
+    inputs = tokenizer(prompt, return_tensors="pt")
+
+    output = model.generate(
+        **inputs,
+        max_new_tokens=50,
+        do_sample=True,
+        temperature=temperature,
+        top_k=50,
+        top_p=0.95,
+        pad_token_id=tokenizer.eos_token_id
+    )
+
+    print(tokenizer.decode(output[0], skip_special_tokens=True))
+
+# 8. Test generation
+generate("Artificial intelligence", 0.3)
+generate("Machine learning", 0.8)
+generate("Generative AI", 1.2)

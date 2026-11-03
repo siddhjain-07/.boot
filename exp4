@@ -1,0 +1,45 @@
+# Implementing Text-to-Image Generation using DALL·E Mini
+
+# Install required libraries
+# run install -> !pip install -q min-dalle pillow
+
+# Import libraries
+from min_dalle import MinDalle
+from PIL import Image
+from IPython.display import display
+import torch # Import torch for dtype
+
+# Load DALL·E Mini model
+print("Loading DALL·E Mini model...")
+
+model = MinDalle(
+    models_root="./pretrained",
+    dtype=torch.float32, 
+    device="cpu",
+    is_mega=False
+)
+
+print("Model loaded successfully!")
+
+# Define text prompt
+prompt = "A beautiful sunset over the mountains, digital art"
+
+print("Prompt:", prompt)
+print("Generating image...")
+
+# Generate image
+image = model.generate_image(
+    text=prompt,
+    seed=42,
+    temperature=1.0,
+    supercondition_factor=2.0,
+    grid_size=1
+)
+
+# Display image
+display(image)
+
+# Save image
+image.save("generated_image.png")
+
+print("Image generated and saved as generated_image.png")

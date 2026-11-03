@@ -1,0 +1,82 @@
+# Implementing Text-to-Image Generation using DALL·E Mini
+
+# Install required libraries
+# run install -> !pip install -q min-dalle pillow
+
+# Import libraries
+from min_dalle import MinDalle
+from PIL import Image
+from IPython.display import display
+import torch # Import torch for dtype
+
+# Load DALL·E Mini model
+print("Loading DALL·E Mini model...")
+
+model = MinDalle(
+    models_root="./pretrained",
+    dtype=torch.float32, 
+    device="cpu",
+    is_mega=False
+)
+
+print("Model loaded successfully!")
+
+import matplotlib.pyplot as plt
+import torch
+import numpy as np
+# Base parameters
+base_prompt = """a futuristic city in the style of cyberpunk, highly 
+detailed, 4k"""
+base_seed = 42
+base_grid_size = 1
+base_temp = 1.0
+base_sc = 16
+# 4 variations for each of the 4 parameters
+experiments = {
+    'seed': [42, 100, 999, 12345],
+    'grid_size': [1, 1, 1, 1],  # generating single images for comparison
+    'temperature': [0.1, 0.5, 1.0, 2.0],
+    'supercondition_factor': [4, 8, 16, 32]
+}
+fig, axes = plt.subplots(4, 4, figsize=(16, 16))
+# 1. Vary Seed
+for idx, val in enumerate(experiments['seed']):
+    img = model.generate_image(text=base_prompt, seed=val, 
+grid_size=base_grid_size, temperature=base_temp, 
+supercondition_factor=base_sc)
+    img_arr = img.to('cpu').numpy().astype('uint8') if isinstance(img, 
+torch.Tensor) else np.array(img).astype('uint8')
+    axes[0, idx].imshow(img_arr[0] if img_arr.ndim == 4 else img_arr)
+    axes[0, idx].set_title(f"seed={val}")
+    axes[0, idx].axis('off')
+# 2. Vary Grid Size (demonstrating layout variation)
+for idx, val in enumerate([1, 1, 1, 1]):
+    img = model.generate_image(text=base_prompt, seed=base_seed, 
+grid_size=val, temperature=base_temp, supercondition_factor=base_sc)
+    img_arr = img.to('cpu').numpy().astype('uint8') if isinstance(img, 
+torch.Tensor) else np.array(img).astype('uint8')
+    axes[1, idx].imshow(img_arr[0] if img_arr.ndim == 4 else img_arr)
+    axes[1, idx].set_title(f"grid={val}")
+    axes[1, idx].axis('off')
+# 3. Vary Temperature
+for idx, val in enumerate(experiments['temperature']):
+    img = model.generate_image(text=base_prompt, seed=base_seed, 
+grid_size=base_grid_size, temperature=val, 
+supercondition_factor=base_sc)
+    img_arr = img.to('cpu').numpy().astype('uint8') if isinstance(img, 
+torch.Tensor) else np.array(img).astype('uint8')
+    axes[2, idx].imshow(img_arr[0] if img_arr.ndim == 4 else img_arr)
+    axes[2, idx].set_title(f"temp={val}")
+    axes[2, idx].axis('off')
+# 4. Vary Supercondition Factor
+for idx, val in enumerate(experiments['supercondition_factor']):
+    img = model.generate_image(text=base_prompt, seed=base_seed, 
+grid_size=base_grid_size, temperature=base_temp, 
+supercondition_factor=val)
+    img_arr = img.to('cpu').numpy().astype('uint8') if isinstance(img, 
+torch.Tensor) else np.array(img).astype('uint8')
+    axes[3, idx].imshow(img_arr[0] if img_arr.ndim == 4 else img_arr)
+    axes[3, idx].set_title(f"supercond={val}")
+    axes[3, idx].axis('off')
+plt.tight_layout()
+plt.show()

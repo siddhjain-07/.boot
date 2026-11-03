@@ -1,0 +1,64 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Dense, Input
+
+# 1. Load and preprocess MNIST
+(X, y), _ = mnist.load_data()
+X = X.reshape(-1, 784).astype("float32") / 255.0
+
+A, B = X[y == 6], X[y == 8]
+
+# 2. Shared Encoder
+encoder = Sequential([
+    Input(shape=(784,)),
+    Dense(512, activation="relu"),
+    Dense(256, activation="relu"),
+    Dense(128, activation="relu"),
+    Dense(20, activation="relu")
+])
+
+# 3. Separate Decoders
+def decoder():
+    return Sequential([
+        Input(shape=(20,)),
+        Dense(128, activation="relu"),
+        Dense(256, activation="relu"),
+        Dense(512, activation="relu"),
+        Dense(784, activation="sigmoid")
+    ])
+
+decoderA, decoderB = decoder(), decoder()
+
+# 4. Autoencoders
+autoA = Sequential([encoder, decoderA])
+autoB = Sequential([encoder, decoderB])
+
+autoA.compile(optimizer="adam", loss="binary_crossentropy")
+autoB.compile(optimizer="adam", loss="binary_crossentropy")
+
+# 5. Train
+autoA.fit(A, A, epochs=10, batch_size=32)
+autoB.fit(B, B, epochs=10, batch_size=32)
+
+# 6. Cross-domain reconstruction
+latentA = encoder.predict(A[:5])
+latentB = encoder.predict(B[:5])
+
+fakeB = decoderB.predict(latentA)  # 6 -> 8
+fakeA = decoderA.predict(latentB)  # 8 -> 6
+
+# 7. Display results
+plt.figure(figsize=(10, 4))
+
+for i in range(5):
+    plt.subplot(2, 5, i+1)
+    plt.imshow(A[i].reshape(28, 28), cmap="gray")
+    plt.axis("off")
+
+    plt.subplot(2, 5, i+6)
+    plt.imshow(fakeB[i].reshape(28, 28), cmap="gray")
+    plt.axis("off")
+
+plt.show()
